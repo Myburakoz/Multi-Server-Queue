@@ -67,6 +67,7 @@ public class Simulation {
          */
 
         generateArrivals();
+        simulate();
     }
 
     // Output methods
@@ -175,28 +176,87 @@ public class Simulation {
     }
 
     public void printCustomerTable() {
+        int numServs = (cfg != null) ? cfg.getNumServers() : 3;
+
         System.out.println("---------------------------------------------------------------------------------------------------------------------");
         System.out.println("                                           CUSTOMER TABLE                                                            ");
         System.out.println("---------------------------------------------------------------------------------------------------------------------");
-        System.out.printf("%-10s | %-12s | %-14s | %-13s | %-12s | %-11s | %-7s | %-11s\n",
-                "Customer", "Arrival Time", "When Available", "Chosen Server", "Service Time", "Finish Time", "Delay", "System Time");
+
+        // Header row 1
+        StringBuilder header1 = new StringBuilder();
+        header1.append(String.format("%-10s | %-12s | ", "Customer", "Interarrival"));
+        header1.append(String.format("%-12s | ", "Arrival"));
+        for (int i = 0; i < numServs; i++) {
+            header1.append(String.format("%-14s | ", "When S" + (i + 1)));
+        }
+        header1.append(String.format("%-13s | %-12s | %-12s | ", "Server", "Service", "Time"));
+        for (int i = 0; i < numServs; i++) {
+            header1.append(String.format("%-10s | ", "S" + (i + 1) + " Comp"));
+        }
+        header1.append(String.format("%-7s | %-11s", "Customer", "Time in"));
+        System.out.println(header1.toString());
+
+        // Header row 2
+        StringBuilder header2 = new StringBuilder();
+        header2.append(String.format("%-10s | %-12s | ", "Number", "Time (Min)"));
+        header2.append(String.format("%-12s | ", "Time"));
+        for (int i = 0; i < numServs; i++) {
+            header2.append(String.format("%-14s | ", "Available"));
+        }
+        header2.append(String.format("%-13s | %-12s | %-12s | ", "Chosen", "Time (Min)", "Begins"));
+        for (int i = 0; i < numServs; i++) {
+            header2.append(String.format("%-10s | ", "Time"));
+        }
+        header2.append(String.format("%-7s | %-11s", "Delay", "System"));
+        System.out.println(header2.toString());
+
         System.out.println("---------------------------------------------------------------------------------------------------------------------");
 
         if (customers == null || customers.isEmpty()) {
-            System.out.printf("%-10s | %-12s | %-14s | %-13s | %-12s | %-11s | %-7s | %-11s\n", "-", "-", "-", "-", "-", "-", "-", "-");
+            System.out.println("-");
         } else {
+            int[] serverAvail = new int[numServs];
+
             for (CustomerRecord c : customers) {
+                StringBuilder row = new StringBuilder();
+                row.append(String.format("%-10d | %-12s | ", c.getId(), String.valueOf(c.getInterArrival())));
+
                 String arrival = c.getArrivalTime() < 0 ? "-" : String.valueOf(c.getArrivalTime());
-                String serviceStart = c.getServiceStartTime() < 0 ? "-" : String.valueOf(c.getServiceStartTime());
-                String server = c.getServerId() < 0 ? "-" : String.valueOf(c.getServerId());
+                row.append(String.format("%-12s | ", arrival));
+
+                for (int i = 0; i < numServs; i++) {
+                    row.append(String.format("%-14s | ", String.valueOf(serverAvail[i])));
+                }
+
+                String server = c.getServerId() < 0 ? "-" : "S" + (c.getServerId() + 1);
+                row.append(String.format("%-13s | ", server));
+
                 String serviceTime = c.getServiceTime() <= 0 ? "-" : String.valueOf(c.getServiceTime());
-                String serviceEnd = c.getServiceEndTime() < 0 ? "-" : String.valueOf(c.getServiceEndTime());
+                row.append(String.format("%-12s | ", serviceTime));
+
+                String serviceStart = c.getServiceStartTime() < 0 ? "-" : String.valueOf(c.getServiceStartTime());
+
+                row.append(String.format("%-12s | ", serviceStart));
+
+                for (int i = 0; i < numServs; i++) {
+                    if (c.getServerId() == i) {
+                        row.append(String.format("%-10s | ", c.getServiceEndTime() < 0 ? "-" : String.valueOf(c.getServiceEndTime())));
+                    } else {
+                        row.append(String.format("%-10s | ", ""));
+                    }
+                }
+
                 String wait = c.getArrivalTime() < 0 ? "-" : String.valueOf(c.getWaitTime());
                 int sysTime = c.getWaitTime() + c.getServiceTime();
                 String systemTime = c.getArrivalTime() < 0 ? "-" : String.valueOf(sysTime);
 
-                System.out.printf("%-10d | %-12s | %-14s | %-13s | %-12s | %-11s | %-7s | %-11s\n",
-                        c.getId(), arrival, serviceStart, server, serviceTime, serviceEnd, wait, systemTime);
+                row.append(String.format("%-7s | %-11s", wait, systemTime));
+
+                System.out.println(row.toString());
+
+                if (c.getServerId() >= 0 && c.getServerId() < numServs) {
+                    serverAvail[c.getServerId()] = c.getServiceEndTime();
+                }
             }
         }
         System.out.println("---------------------------------------------------------------------------------------------------------------------\n");
