@@ -59,15 +59,9 @@ public class Simulation {
     }
 
     public void run() {
-        /*
-         * TODO: Simülasyon akışı:
-         * 1. generateArrivals() metodunu çağırarak müşterilerin geliş zamanlarını oluşturun.
-         * 2. simulate() metodunu çağırarak ana simülasyon döngüsünü çalıştırın.
-         * 3. computeStatistics() metodunu çağırarak sonuç istatistiklerini hesaplayın.
-         */
-
         generateArrivals();
         simulate();
+        computeStatistics();
     }
 
     // Output methods
@@ -397,18 +391,50 @@ public class Simulation {
         }
 
     private void computeStatistics() {
-        /*
-         * TODO: Son istatistiklerin hesaplanması.
-         * 1. customers listesini dolaşarak şu toplamları bulup ortalamalarını hesaplayın (Ortalama = Toplam / cfg.getNumCustomers()):
-         *    - Toplam bekleme süresi -> avgWait (1)
-         *    - Toplam servis süresi -> avgServiceActual (4)
-         *    - Toplam inter-arrival süresi -> avgInterArrActual (5)
-         *    - Toplam sistemde geçirdiği süre -> avgSystemTime (7)
-         * 2. Bekleyen müşteri sayısını ve bekleyenlerin bekleme süresini ayrı bir sayaçta toplayıp:
-         *    - probWait (Bekleme Olasılığı) = Bekleyen Sayısı / cfg.getNumCustomers() (2)
-         *    - avgWaitThoseWhoWait = Bekleyenlerin Toplam Beklemesi / Bekleyen Sayısı (6)
-         * 3. probIdleServer dizisini cfg.getNumServers() boyutunda yaratın. Her sunucu için "Boşta kalma yüzdesini" bulup diziye atayın (3):
-         *    - Idle Olasılığı = (totalSimTime - server.getTotalBusyTime()) / (double) totalSimTime;
-         */
+        int numCustomers = cfg.getNumCustomers();
+
+        if(numCustomers < 1) return;
+
+        double totalWait = 0;
+        double totalService = 0;
+        double totalInterArrival = 0;
+        double totalSystemTime = 0;
+
+        int waitingCustomerCount  = 0;
+        double totalWaitForThoseWhoWait = 0;
+
+        for (CustomerRecord c : customers) {
+            totalWait += c.getWaitTime();
+            totalService += c.getServiceTime();
+            totalInterArrival += c.getInterArrival();
+            totalSystemTime += c.getWaitTime() + c.getServiceTime();
+
+            if (c.getWaitTime() > 0) {
+                waitingCustomerCount++;
+                totalWaitForThoseWhoWait += c.getWaitTime();
+            }
+        }
+
+        avgWait = totalWait / numCustomers;
+        probWait = (double) waitingCustomerCount / numCustomers;
+        avgServiceActual = totalService / numCustomers;
+        avgInterArrActual = totalInterArrival / numCustomers;
+
+        if (waitingCustomerCount > 0) {
+            avgWaitThoseWhoWait = totalWaitForThoseWhoWait / waitingCustomerCount;
+        } else {
+            avgWaitThoseWhoWait = 0.0;
+        }
+        avgSystemTime = totalSystemTime / numCustomers;
+
+        int numServers = cfg.getNumServers();
+        probIdleServer = new double[numServers];
+
+        if (totalSimTime > 0) {
+            for (int i = 0; i < numServers; i++) {
+                Server s = servers.get(i);
+                probIdleServer[i] = (totalSimTime - s.getTotalBusyTime()) / (double) totalSimTime;
+            }
+        }
     }
 }
