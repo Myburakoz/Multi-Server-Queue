@@ -31,16 +31,35 @@ public class Simulation {
 
 
     public Simulation(SimConfig cfg) {
-        /*
-         * TODO: İlklendirme (Initialization) adımı:
-         * 1. Parametre olarak gelen cfg'yi this.cfg'ye atayın.
-         * 2. servers, customers, waitingList, tickStats listelerini LinkedList veya ArrayList olarak (waitingList için LinkedList) new ile yaratın. fel için PriorityQueue kullanın.
-         * 3. cfg nesnesindeki numServers sayısı kadar döngü kurup, yeni Server objeleri oluşturun:
-         *    - id'sini atayın.
-         *    - minService ve maxService değerlerini cfg.serverCfg array'inden alıp Server objesine kopyalayın.
-         *    - Oluşturulan Server'ı servers listesine ekleyin.
-         * 4. cfg.numCustomers sayısı kadar döngü kurup, CustomerRecord yaratın, id'sini i olarak atayıp customers listesine ekleyin.
-         */
+        // 1. Parametre olarak gelen cfg'yi this.cfg'ye atayın.
+        this.cfg = cfg;
+
+        // 2. Listeleri new ile hafızada yaratın.
+        this.servers = new java.util.ArrayList<>();
+        this.customers = new java.util.ArrayList<>();
+        this.waitingList = new java.util.LinkedList<>();
+        this.tickStats = new java.util.ArrayList<>();
+        this.FEL = new java.util.PriorityQueue<>();
+
+        // 3. cfg nesnesindeki numServers sayısı kadar döngü kurup, yeni Server objeleri oluşturun
+        config.ServerConfig[] sCfgs = cfg.getServerCfg(); // Main'den gördüğümüz dizi yapısı
+        for (int i = 0; i < cfg.getNumServers(); i++) {
+            Server server = new Server();
+            server.setId(i); // Sunucu ID'si atandı
+
+            // minService ve maxService değerlerini ServerConfig array'inden kopyalıyoruz
+            server.setMinService(sCfgs[i].getMinServiceTime());
+            server.setMaxService(sCfgs[i].getMaxServiceTime());
+
+            this.servers.add(server); // Oluşturulan Server'ı servers listesine ekliyoruz
+        }
+
+        // 4. cfg.numCustomers sayısı kadar döngü kurup, CustomerRecord yaratın
+        for (int i = 0; i < cfg.getNumCustomers(); i++) {
+            CustomerRecord customer = new CustomerRecord();
+            customer.setId(i); // Yönergedeki gibi id'sini i olarak atıyoruz
+            this.customers.add(customer);
+        }
     }
 
     public void run() {
@@ -208,12 +227,14 @@ public class Simulation {
     }
 
     private int findFreeServer() {
-        /*
-         * TODO: Boş sunucu arama.
-         * servers listesini baştan sona gezin.
-         * !server.busy (boşta) olan ilk sunucunun id'sini bulun ve döndürün.
-         * Eğer tüm sunucular meşgulse -1 döndürün.
-         */
+        // servers listesini baştan sona geziyoruz
+        for (Server server : servers) {
+            // !server.isBusy() olan ilk sunucunun id'sini bulun ve döndürün
+            if (!server.isBusy()) {
+                return server.getId();
+            }
+        }
+        // Eğer tüm sunucular meşgulse -1 döndürün
         return -1;
     }
 

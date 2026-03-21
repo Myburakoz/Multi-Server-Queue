@@ -84,12 +84,11 @@ public class Server {
     }
 
     public int nextServiceTime() {
-        /*
-         * TODO: Rastgele servis süresi üretimi.
-         * Main sınıfındaki randRange(getMinService(), getMaxService()) metodunu çağırarak
-         * bu sunucu için sıradaki servis süresini [getMinService(), getMaxService()] aralığında olacak
-         * şekilde hesaplayıp döndürün.
-         */
-        return 0;
+        // Java kuralları gereği isimsiz paketteki Main sınıfını buraya çağıramıyoruz.
+        // Bu yüzden randRange mantığını (Matematiksel kuralı) doğrudan burada uyguluyoruz:
+        int min = this.getMinService();
+        int max = this.getMaxService();
+
+        return min + (int)(Math.random() * (max - min + 1));
     }
 }
