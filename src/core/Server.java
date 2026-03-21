@@ -1,5 +1,7 @@
 package core;
 
+import util.ManualRandom;
+
 public class Server {
     private int id;
     private boolean busy;
@@ -84,11 +86,9 @@ public class Server {
     }
 
     public int nextServiceTime() {
-        // Java kuralları gereği isimsiz paketteki Main sınıfını buraya çağıramıyoruz.
-        // Bu yüzden randRange mantığını (Matematiksel kuralı) doğrudan burada uyguluyoruz:
         int min = this.getMinService();
         int max = this.getMaxService();
 
-        return min + (int)(Math.random() * (max - min + 1));
+        return ManualRandom.randRange(min, max);
     }
 }

@@ -4,15 +4,6 @@ import config.SimConfig;
 import java.util.Scanner;
 
 public class Main {
-    public static int randRange(int a, int b) {
-        if (a > b) {
-            int temp = a;
-            a = b;
-            b = temp;
-        }
-        return a + (int)(Math.random() * (b - a + 1));
-    }
-
     public static SimConfig interactiveSetup() {
         SimConfig cfg = new SimConfig();
         Scanner scanner = new Scanner(System.in);
