@@ -85,6 +85,10 @@ public class Server {
         this.maxService = maxService;
     }
 
+    public void increaseIdleTime(int value){
+        this.idleTime += value;
+    }
+
     public int nextServiceTime() {
         int min = this.getMinService();
         int max = this.getMaxService();

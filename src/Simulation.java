@@ -224,29 +224,34 @@ public class Simulation {
     }
 
     private int findFreeServer() {
-        // servers listesini baştan sona geziyoruz
         for (Server server : servers) {
-            // !server.isBusy() olan ilk sunucunun id'sini bulun ve döndürün
             if (!server.isBusy()) {
                 return server.getId();
             }
         }
-        // Eğer tüm sunucular meşgulse -1 döndürün
         return -1;
     }
 
     private void assignToServer(int custId, int servId, int currentClock) {
-        /*
-         * TODO: Boştaki sunucuya müşteri atama işlemi.
-         * 1. İlgili `servId`'ye sahip sunucuya gidip nextServiceTime() çağırarak servis süresini (svcTime) alın.
-         * 2. Eğer currentClock, sunucunun lastFinish değerinden büyükse, fark kadar sunucunun idleTime'ını artırın.
-         * 3. Sunucuyu meşgul yapın (busy = true) ve currentCustomer = custId olarak atayın.
-         * 4. customers listesindeki müşterinin serviceStartTime (currentClock), serviceTime (svcTime),
-         *    serviceEndTime (currentClock + svcTime), serverId, ve waitTime (currentClock - arrivalTime)
-         *    alanlarını doldurun.
-         * 5. Yeni bir DEPARTURE olayı oluşturun: (type = DEPARTURE, time = currentClock + svcTime,
-         *    customerId = custId, serverId = servId) ve bu olayı insertEvent ile fel'e kaydedin.
-         */
+        Server server = servers.get(servId);
+
+        int serviceTime = server.nextServiceTime();
+
+        if(currentClock > server.getLastFinish())
+            server.increaseIdleTime(currentClock - server.getLastFinish());
+
+        server.setBusy(true);
+        server.setCurrentCustomer(custId);
+
+        CustomerRecord customer = customers.get(custId);
+
+        customer.setServiceStartTime(currentClock);
+        customer.setServiceTime(serviceTime);
+        customer.setServiceEndTime(currentClock + serviceTime);
+        customer.setServerId(servId);
+        customer.setWaitTime(currentClock - customer.getArrivalTime());
+
+        insertEvent(new Event(EventType.DEPARTURE, currentClock + serviceTime, custId, servId));
     }
 
     private void simulate() {
