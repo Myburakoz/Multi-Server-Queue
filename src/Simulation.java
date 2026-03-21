@@ -4,6 +4,7 @@ import core.Event;
 import core.EventType;
 import core.Server;
 import stats.TickStat;
+import util.ManualRandom;
 
 import java.util.List;
 import java.util.PriorityQueue;
@@ -64,6 +65,8 @@ public class Simulation {
          * 2. simulate() metodunu çağırarak ana simülasyon döngüsünü çalıştırın.
          * 3. computeStatistics() metodunu çağırarak sonuç istatistiklerini hesaplayın.
          */
+
+        generateArrivals();
     }
 
     // Output methods
@@ -201,24 +204,23 @@ public class Simulation {
 
     // Core private methods
     private void insertEvent(Event ev) {
-        /*
-         * TODO: Gelecek Olaylar Kuyruğuna (FEL) ekleme yapın.
-         * PriorityQueue olduğu için sıralama kendi içinde halledilecektir,
-         * sadece elemanı kuyruğa ekleyin (fel.add(ev)).
-         */
+        this.FEL.add(ev);
     }
 
     private void generateArrivals() {
-        /*
-         * TODO: Başlangıç olaylarını oluşturma.
-         * 1. clock = 0 değişkeni tutun.
-         * 2. cfg.numCustomers kadar dönen bir döngü yazın.
-         * 3. Her dönüşte cfg.minInterArrival ve cfg.maxInterArrival arasında Main.randRange ile bir süre (ia) üretin.
-         * 4. clock değerini ia kadar artırın.
-         * 5. customers listesindeki ilgili kayda bu interArrival (ia) ve arrivalTime (clock) değerlerini yazın.
-         * 6. Yeni bir Event nesnesi oluşturun (type = ARRIVAL, time = clock, customerId = i, serverId = -1).
-         * 7. Bu olayı insertEvent() ile fel listesine ekleyin.
-         */
+        int clock = 0;
+
+        for(int i = 0; i < cfg.getNumCustomers(); i++){
+            int interarrivalTime = ManualRandom.randRange(cfg.getMinInterarrivalTime(), cfg.getMaxInterarrivalTime());
+            clock += interarrivalTime;
+
+            CustomerRecord customer = customers.get(i);
+
+            customer.setInterArrival(interarrivalTime);
+            customer.setArrivalTime(clock);
+
+            insertEvent(new Event(EventType.ARRIVAL, clock, i, -1));
+        }
     }
 
     private int findFreeServer() {

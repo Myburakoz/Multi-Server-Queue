@@ -6,6 +6,13 @@ public class Event implements Comparable<Event> {
     private int customerId;
     private int serverId;
 
+    public Event(EventType ev, int time, int customerId, int serverId){
+        this.eventType = ev;
+        this.time = time;
+        this.customerId = customerId;
+        this.serverId = serverId;
+    }
+
     public EventType getEventType() {
         return eventType;
     }
