@@ -255,35 +255,86 @@ public class Simulation {
     }
 
     private void simulate() {
-        /*
-         * TODO: Ana simülasyon mantığı (Time-advance).
-         * 1. Simülasyonun maksimum son saatini (endTime) bulun (customers içindeki en büyük arrivalTime'a + 200 ekleyebilirsiniz).
-         * 2. customersServed (hizmet gören) = 0 gibi sayaçlar tutun.
-         * 3. clock = 0'dan endTime'a kadar bir for döngüsü başlatın.
-         * 4. Her bir 'clock' anı için:
-         *    A. ARRIVALS (Gelişler) kontrolü:
-         *       fel listesinin başındaki olayları kontrol edin. Eğer olay ARRIVAL ve zamanı clock'a eşit ise
-         *       listeden çıkarın (Iterator kullanın) ve waitingList kuyruğuna (müşteri ID'sini) push edin.
-         *    B. DEPARTURES (Ayrılışlar) kontrolü:
-         *       Yine fel'de zamanı clock'a eşit olan DEPARTURE varsa listeden çıkartın.
-         *       İlgili sunucunun busy flag'ini false yapın, lastFinish'i clock'a eşitleyin,
-         *       completedCount'u 1 artırın. customersServed sayacını artırın.
-         *    C. BOŞTA OLAN SUNUCUYA ATAMA:
-         *       while (!waitingList.isEmpty()) {
-         *           int sid = findFreeServer();
-         *           if (sid < 0) break; // Boş sunucu kalmadı
-         *           int cid = waitingList.poll();
-         *           assignToServer(cid, sid, clock);
-         *       }
-         *    D. LOG (TickStats) KAYDI:
-         *       Eğer o zaman diliminde herhangi bir olay(A, B veya C aşamasında) gerçekleştiyse,
-         *       TickStat objesi oluşturup o anki saat, kuyruk uzunluğu, sunucu statüleri (busy durumu 0/1) ve
-         *       kalan ilk 4 fel olayının özet stringini ekleyerek tickStats listesine kaydedin.
-         *    E. Sunucuların "totalBusyTime" sayaçlarını her clock iterasyonunda, eğer busy=true ise artırın.
-         *    F. Bitiş kontrolü: customersServed tüm müşterilere eşitse ve hem kuyruk hem de fel listesi
-         *       sadece ayrılış içeriyor veya tamamen boşsa mevcut clock'u totalSimTime olarak kaydedip döngüyü (break) kırın.
-         */
-    }
+            int maxArrivalTime = 0;
+            for (CustomerRecord c : customers) {
+                if (c.getArrivalTime() > maxArrivalTime) {
+                    maxArrivalTime = c.getArrivalTime();
+                }
+            }
+            int endTime = maxArrivalTime + 200;
+    
+            int customersServed = 0;
+    
+            for (int clock = 0; clock <= endTime; clock++) {
+                boolean eventOccurred = false;
+    
+                // A & B: GELİŞLER ve AYRILIŞLAR kontrolü
+                while (!FEL.isEmpty() && FEL.peek().getTime() == clock) {
+                    Event ev = FEL.poll();
+                    if (ev.getEventType() == EventType.ARRIVAL) {
+                        waitingList.offer(ev.getCustomerId());
+                        eventOccurred = true;
+                    } else if (ev.getEventType() == EventType.DEPARTURE) {
+                        Server s = servers.get(ev.getServerId());
+                        s.setBusy(false);
+                        s.setLastFinish(clock);
+                        s.setCompletedCount(s.getCompletedCount() + 1);
+                        customersServed++;
+                        eventOccurred = true;
+                    }
+                }
+    
+                // C. MASAYA (BOŞTA OLAN SUNUCUYA) ATAMA
+                while (!waitingList.isEmpty()) {
+                    int sid = findFreeServer();
+                    if (sid < 0) break; // Boş sunucu kalmadı
+    
+                    int cid = waitingList.poll();
+                    assignToServer(cid, sid, clock);
+                    eventOccurred = true;
+                }
+    
+                // D. LOG (TickStats) KAYDI
+                if (eventOccurred) {
+                    TickStat stat = new TickStat();
+                    stat.setClock(clock);
+                    stat.setQueueLen(waitingList.size());
+                    
+                    List<Integer> sStatus = new java.util.ArrayList<>();
+                    for (Server s : servers) {
+                        sStatus.add(s.isBusy() ? 1 : 0);
+                    }
+                    stat.setServerStatus(sStatus);
+                    
+                    PriorityQueue<Event> tempFEL = new PriorityQueue<>(FEL);
+                    StringBuilder felBuilder = new StringBuilder();
+                    int count = 0;
+                    while (!tempFEL.isEmpty() && count < 4) {
+                        Event fev = tempFEL.poll();
+                        String t = fev.getEventType() == EventType.ARRIVAL ? "A" : "D";
+                        felBuilder.append(String.format("(%s,%d,C%d) ", t, fev.getTime(), fev.getCustomerId()));
+                        count++;
+                    }
+                    stat.setFelStr(felBuilder.toString().trim());
+                    stat.setNumDepartures(customersServed);
+                    
+                    tickStats.add(stat);
+                }
+    
+                // E. DOLULUK GÜNCELLEMESİ
+                for (Server s : servers) {
+                    if (s.isBusy()) {
+                        s.setTotalBusyTime(s.getTotalBusyTime() + 1);
+                    }
+                }
+    
+                // F. BİTİŞ KONTROLÜ
+                if (customersServed == cfg.getNumCustomers()) {
+                    totalSimTime = clock;
+                    break;
+                }
+            }
+        }
 
     private void computeStatistics() {
         /*
