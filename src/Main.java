@@ -3,87 +3,225 @@ import config.SimConfig;
 
 import java.util.Scanner;
 
+import static util.TablePrinter.*;
+
 public class Main {
+
+    private static final Scanner scanner = new Scanner(System.in);
+
+    // ─── Clear Console ───
+    public static void clearConsole() {
+        try {
+            if (System.getenv("TERM") != null) {
+                // Real terminal: use system clear
+                new ProcessBuilder("clear").inheritIO().start().waitFor();
+            } else {
+                // IDE fallback: print blank lines
+                for (int i = 0; i < 50; i++) System.out.println();
+            }
+        } catch (Exception e) {
+            // Ultimate fallback
+            for (int i = 0; i < 50; i++) System.out.println();
+        }
+    }
+
+    // ─── Styled prompt helpers ───
+    private static void printBanner() {
+        String bc = DIM + CYAN;
+        int[] w = {52};
+        System.out.println(topBorder(w, bc));
+        printTitle("⚡  MULTI-SERVER QUEUE SIMULATION  ⚡", totalWidth(w), BOLD + BRIGHT_YELLOW);
+        System.out.println(bottomBorder(w, bc));
+        System.out.println();
+    }
+
+    private static String styledPrompt(String label) {
+        return BRIGHT_CYAN + "  ▸ " + RESET + WHITE + label + RESET + BRIGHT_YELLOW + " ➜  " + RESET;
+    }
+
+    private static void sectionHeader(String title) {
+        System.out.println();
+        System.out.println(BOLD + BRIGHT_MAGENTA + "  ┌─ " + title + RESET);
+        System.out.println(BOLD + BRIGHT_MAGENTA + "  │" + RESET);
+    }
+
+    private static void sectionFooter() {
+        System.out.println(BOLD + BRIGHT_MAGENTA + "  │" + RESET);
+        System.out.println(BOLD + BRIGHT_MAGENTA + "  └─ " + BRIGHT_GREEN + "✓ Done" + RESET);
+    }
+
+    private static int readInt(String label, int min, int max) {
+        while (true) {
+            try {
+                System.out.print(styledPrompt(label + " (" + min + "-" + max + ")"));
+                int val = Integer.parseInt(scanner.nextLine().trim());
+                if (val >= min && val <= max) return val;
+                System.out.println(BRIGHT_RED + "    ✗ Please enter a value between " + min + " and " + max + "." + RESET);
+            } catch (NumberFormatException e) {
+                System.out.println(BRIGHT_RED + "    ✗ Invalid input. Please enter a valid integer." + RESET);
+            }
+        }
+    }
+
+    private static int readIntMin(String label, int min) {
+        while (true) {
+            try {
+                System.out.print(styledPrompt(label + " (≥" + min + ")"));
+                int val = Integer.parseInt(scanner.nextLine().trim());
+                if (val >= min) return val;
+                System.out.println(BRIGHT_RED + "    ✗ Value must be ≥ " + min + "." + RESET);
+            } catch (NumberFormatException e) {
+                System.out.println(BRIGHT_RED + "    ✗ Invalid input. Please enter a valid integer." + RESET);
+            }
+        }
+    }
+
+    // ─── Interactive Setup ───
     public static SimConfig interactiveSetup() {
         SimConfig cfg = new SimConfig();
-        Scanner scanner = new Scanner(System.in);
 
-        System.out.println("--- MULTI-SERVER QUEUE SIMULATION SETUP ---");
+        clearConsole();
+        printBanner();
 
         // Number of customers
-        while (true) {
-            try {
-                System.out.print("Number of customers (1-1000): ");
-                cfg.setNumCustomers(Integer.parseInt(scanner.nextLine()));
-                if (cfg.getNumCustomers() >= 1 && cfg.getNumCustomers() <= 1000) break;
-                System.out.println("Invalid input. Please enter a value between 1 and 1000.");
-            } catch (NumberFormatException e) {
-                System.out.println("Invalid input. Please enter a valid integer.");
-            }
-        }
+        sectionHeader("Customer Configuration");
+        cfg.setNumCustomers(readInt("Number of customers", 1, 1000));
+        sectionFooter();
 
         // Inter-arrival times
+        sectionHeader("Inter-Arrival Time");
         while (true) {
-            try {
-                System.out.print("Min inter-arrival: ");
-                cfg.setMinInterarrivalTime(Integer.parseInt(scanner.nextLine()));
-                System.out.print("Max inter-arrival: ");
-                cfg.setMaxInterarrivalTime(Integer.parseInt(scanner.nextLine()));
-
-                if (cfg.getMinInterarrivalTime() > 0 && cfg.getMaxInterarrivalTime() >= cfg.getMinInterarrivalTime()) break;
-                System.out.println("Invalid input. Min must be > 0 and Max >= Min.");
-            } catch (NumberFormatException e) {
-                System.out.println("Invalid input. Please enter valid integers.");
-            }
+            int minIA = readIntMin("Min inter-arrival", 1);
+            int maxIA = readIntMin("Max inter-arrival", minIA);
+            cfg.setMinInterarrivalTime(minIA);
+            cfg.setMaxInterarrivalTime(maxIA);
+            break;
         }
+        sectionFooter();
 
         // Number of servers
-        while (true) {
-            try {
-                System.out.print("Number of servers (1-4): ");
-                cfg.setNumServers(Integer.parseInt(scanner.nextLine()));
-                if (cfg.getNumServers() >= 1 && cfg.getNumServers() <= 4) break;
-                System.out.println("Invalid input. Please enter a value between 1 and 4.");
-            } catch (NumberFormatException e) {
-                System.out.println("Invalid input. Please enter a valid integer.");
-            }
-        }
+        sectionHeader("Server Configuration");
+        cfg.setNumServers(readInt("Number of servers", 1, 4));
 
-        // Server configurations
+        // Server service times
         ServerConfig[] sCfgs = new ServerConfig[cfg.getNumServers()];
         cfg.setServerCfg(sCfgs);
         for (int i = 0; i < cfg.getNumServers(); i++) {
+            System.out.println(BOLD + BRIGHT_MAGENTA + "  │" + RESET);
+            System.out.println(BOLD + BRIGHT_MAGENTA + "  │  " + BRIGHT_CYAN + "Server " + (i + 1) + RESET);
             sCfgs[i] = new ServerConfig();
             while (true) {
-                try {
-                    System.out.printf("Server %d - Min service time: ", i);
-                    sCfgs[i].setMinServiceTime(Integer.parseInt(scanner.nextLine()));
-                    System.out.printf("Server %d - Max service time: ", i);
-                    sCfgs[i].setMaxServiceTime(Integer.parseInt(scanner.nextLine()));
-
-                    if (sCfgs[i].getMinServiceTime() > 0 && sCfgs[i].getMaxServiceTime() >= sCfgs[i].getMinServiceTime()) break;
-                    System.out.println("Invalid input. Min > 0 and Max >= Min required.");
-                } catch (NumberFormatException e) {
-                    System.out.println("Invalid input. Please enter valid integers.");
-                }
+                int minS = readIntMin("  S" + (i + 1) + " Min service time", 1);
+                int maxS = readIntMin("  S" + (i + 1) + " Max service time", minS);
+                sCfgs[i].setMinServiceTime(minS);
+                sCfgs[i].setMaxServiceTime(maxS);
+                break;
             }
         }
+        sectionFooter();
 
-        System.out.println("Setup complete!\n");
+        System.out.println();
+        System.out.println(BOLD + BRIGHT_GREEN + "  ✔ Setup complete! Running simulation..." + RESET);
+        System.out.println();
+
         return cfg;
     }
 
+    // ─── Interactive Menu ───
+    public static void interactiveMenu(Simulation sim) {
+        while (true) {
+            String bc = DIM + CYAN;
+            int[] w = {42};
+
+            System.out.println(topBorder(w, bc));
+            printTitle("📊  RESULTS MENU", totalWidth(w), BOLD + BRIGHT_YELLOW);
+            System.out.println(midBorder(w, bc));
+
+            String[][] items = {
+                    {"1", "Inter-Arrival Time Distribution"},
+                    {"2", "Service Time Distribution"},
+                    {"3", "Customer Arrival Table"},
+                    {"4", "Simulation Table"},
+                    {"5", "Customer Table"},
+                    {"6", "Statistics"},
+                    {"7", "Print All Tables"},
+                    {"0", "Exit"}
+            };
+
+            for (String[] item : items) {
+                String numColor = item[0].equals("0") ? BRIGHT_RED : BRIGHT_GREEN;
+                System.out.println(row(w,
+                        new String[]{" [" + item[0] + "]  " + item[1]},
+                        new String[]{numColor},
+                        bc));
+            }
+
+            System.out.println(bottomBorder(w, bc));
+            System.out.println();
+            System.out.print(styledPrompt("Select an option"));
+
+            String input = scanner.nextLine().trim();
+
+            if (input.equals("0")) {
+                clearConsole();
+                System.out.println(BOLD + BRIGHT_CYAN + "  Goodbye! 👋" + RESET);
+                return;
+            }
+
+            clearConsole();
+
+            boolean valid = true;
+            switch (input) {
+                case "1":
+                    sim.printInterArrivalTable();
+                    break;
+                case "2":
+                    sim.printServiceTable();
+                    break;
+                case "3":
+                    sim.printArrivalTable();
+                    break;
+                case "4":
+                    sim.printSimulationTable();
+                    break;
+                case "5":
+                    sim.printCustomerTable();
+                    break;
+                case "6":
+                    sim.printStatistics();
+                    break;
+                case "7":
+                    sim.printInterArrivalTable();
+                    sim.printServiceTable();
+                    sim.printArrivalTable();
+                    sim.printSimulationTable();
+                    sim.printCustomerTable();
+                    sim.printStatistics();
+                    break;
+                default:
+                    System.out.println(BRIGHT_RED + "  ✗ Invalid option. Please try again." + RESET);
+                    System.out.println();
+                    valid = false;
+                    break;
+            }
+
+            if (valid) {
+                System.out.println();
+                System.out.print(DIM + "  Press " + BRIGHT_CYAN + "Enter" + DIM + " to return to menu..." + RESET);
+                scanner.nextLine();
+                clearConsole();
+            }
+        }
+    }
+
+    // ─── Main ───
     public static void main(String[] args) {
         SimConfig cfg = interactiveSetup();
 
         Simulation sim = new Simulation(cfg);
         sim.run();
 
-        sim.printInterArrivalTable();
-        sim.printServiceTable();
-        sim.printArrivalTable();
-        sim.printSimulationTable();
-        sim.printCustomerTable();
-        sim.printStatistics();
+        clearConsole();
+        interactiveMenu(sim);
     }
 }

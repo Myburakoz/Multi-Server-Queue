@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
 
+import static util.TablePrinter.*;
+
 public class Simulation {
     private SimConfig cfg;
     private List<Server> servers;
@@ -64,196 +66,308 @@ public class Simulation {
         computeStatistics();
     }
 
-    // Output methods
+    // ═══════════════════════════════════════════════════════════════
+    //                     OUTPUT METHODS (Styled)
+    // ═══════════════════════════════════════════════════════════════
+
     public void printInterArrivalTable() {
-        System.out.println("-------------------------------------------------");
-        System.out.println("          INTER-ARRIVAL TIME DISTRIBUTION        ");
-        System.out.println("-------------------------------------------------");
+        int[] w = {45};
+        String bc = DIM + CYAN;
+
+        System.out.println(topBorder(w, bc));
+        printTitle("INTER-ARRIVAL TIME DISTRIBUTION", totalWidth(w), BRIGHT_YELLOW);
+        System.out.println(midBorder(w, bc));
+
+        String msg;
         if (cfg == null) {
-            System.out.println("Values are uniformly distributed between - and -.");
+            msg = "Values are uniformly distributed between - and -.";
         } else {
-            System.out.printf("Values are uniformly distributed between %d and %d.\n", cfg.getMinInterarrivalTime(), cfg.getMaxInterarrivalTime());
+            msg = String.format("Values are uniformly distributed between %s%d%s and %s%d%s.",
+                    BRIGHT_MAGENTA, cfg.getMinInterarrivalTime(), RESET,
+                    BRIGHT_MAGENTA, cfg.getMaxInterarrivalTime(), RESET);
         }
-        System.out.println("-------------------------------------------------\n");
+        // Manual row for colored inline text
+        System.out.println(bc + "│" + RESET + " " + msg
+                + repeat(" ", 45 - stripAnsi(msg).length()) + " " + bc + "│" + RESET);
+        System.out.println(bottomBorder(w, bc));
+        System.out.println();
     }
 
     public void printServiceTable() {
-        System.out.println("-------------------------------------------------");
-        System.out.println("       SERVICE TIME DISTRIBUTION (per server)    ");
-        System.out.println("-------------------------------------------------");
+        int[] w = {45};
+        String bc = DIM + CYAN;
+
+        System.out.println(topBorder(w, bc));
+        printTitle("SERVICE TIME DISTRIBUTION (per server)", totalWidth(w), BRIGHT_YELLOW);
+        System.out.println(midBorder(w, bc));
+
         if (servers == null || servers.isEmpty()) {
-            System.out.println("Server -: Uniformly distributed between - and -.");
+            System.out.println(row(w, new String[]{"Server -: Uniformly distributed between - and -."}, WHITE, bc));
         } else {
             for (Server s : servers) {
-                System.out.printf("Server %d: Uniformly distributed between %d and %d.\n", s.getId(), s.getMinService(), s.getMaxService());
+                String msg = String.format("Server %s%d%s: Uniform between %s%d%s and %s%d%s.",
+                        BRIGHT_GREEN, s.getId() + 1, RESET,
+                        BRIGHT_MAGENTA, s.getMinService(), RESET,
+                        BRIGHT_MAGENTA, s.getMaxService(), RESET);
+                System.out.println(bc + "│" + RESET + " " + msg
+                        + repeat(" ", 45 - stripAnsi(msg).length()) + " " + bc + "│" + RESET);
             }
         }
-        System.out.println("-------------------------------------------------\n");
+        System.out.println(bottomBorder(w, bc));
+        System.out.println();
     }
 
     public void printArrivalTable() {
-        System.out.println("-------------------------------------------------");
-        System.out.println("             CUSTOMER ARRIVAL TABLE              ");
-        System.out.println("-------------------------------------------------");
-        System.out.printf("%-10s | %-15s | %-15s\n", "Customer", "Inter-Arrival", "Arrival Time");
-        System.out.println("-------------------------------------------------");
+        int[] w = {12, 18, 18};
+        String bc = DIM + CYAN;
+
+        System.out.println(topBorder(w, bc));
+        printTitle("CUSTOMER ARRIVAL TABLE", totalWidth(w), BRIGHT_YELLOW);
+        System.out.println(midBorder(w, bc));
+        System.out.println(row(w, new String[]{"Customer", "Inter-Arrival", "Arrival Time"},
+                BOLD + BRIGHT_CYAN, bc));
+        System.out.println(midBorder(w, bc));
+
         if (customers == null || customers.isEmpty()) {
-            System.out.printf("%-10s | %-15s | %-15s\n", "-", "-", "-");
+            System.out.println(row(w, new String[]{"-", "-", "-"}, DIM + WHITE, bc));
         } else {
             for (CustomerRecord c : customers) {
-                System.out.printf("%-10d | %-15d | %-15d\n", c.getId(), c.getInterArrival(), c.getArrivalTime());
+                System.out.println(row(w,
+                        new String[]{String.valueOf(c.getId()), String.valueOf(c.getInterArrival()), String.valueOf(c.getArrivalTime())},
+                        new String[]{BRIGHT_WHITE, BRIGHT_MAGENTA, BRIGHT_GREEN},
+                        bc));
             }
         }
-        System.out.println("-------------------------------------------------\n");
+        System.out.println(bottomBorder(w, bc));
+        System.out.println();
     }
 
     public void printSimulationTable() {
-        System.out.println("---------------------------------------------------------------------------------------------------------");
-        System.out.println("                                        SIMULATION TABLE                                                 ");
-        System.out.println("---------------------------------------------------------------------------------------------------------");
-
         int numServs = (cfg != null) ? cfg.getNumServers() : 3;
-        StringBuilder sbHeaders = new StringBuilder();
-        sbHeaders.append(String.format("%-6s | %-9s | ", "Clock", "Queue Len"));
+
+        // Build dynamic widths: Clock(6), QueueLen(9), S0..Sn(3 each), FEL(32), Departures(12)
+        int cols = 2 + numServs + 2;
+        int[] w = new int[cols];
+        String[] headers = new String[cols];
+
+        w[0] = 6;  headers[0] = "Clock";
+        w[1] = 9;  headers[1] = "Queue Len";
         for (int i = 0; i < numServs; i++) {
-            sbHeaders.append(String.format("S%-2d | ", i));
+            w[2 + i] = 5;
+            headers[2 + i] = "S" + (i + 1);
         }
-        sbHeaders.append(String.format("%-30s | %-12s", "Future Event List", "Departures"));
-        System.out.println(sbHeaders.toString());
-        System.out.println("---------------------------------------------------------------------------------------------------------");
+        w[2 + numServs] = 55; headers[2 + numServs] = "Future Event List";
+        w[3 + numServs] = 12; headers[3 + numServs] = "Departures";
+
+        String bc = DIM + CYAN;
+
+        System.out.println(topBorder(w, bc));
+        printTitle("SIMULATION TABLE", totalWidth(w), BRIGHT_YELLOW);
+        System.out.println(midBorder(w, bc));
+
+        // Header colors
+        String[] hColors = new String[cols];
+        hColors[0] = BOLD + BRIGHT_CYAN;
+        hColors[1] = BOLD + BRIGHT_CYAN;
+        for (int i = 0; i < numServs; i++) hColors[2 + i] = BOLD + BRIGHT_GREEN;
+        hColors[2 + numServs] = BOLD + BRIGHT_CYAN;
+        hColors[3 + numServs] = BOLD + BRIGHT_CYAN;
+
+        System.out.println(row(w, headers, hColors, bc));
+        System.out.println(midBorder(w, bc));
 
         if (tickStats == null || tickStats.isEmpty()) {
-            StringBuilder row = new StringBuilder();
-            row.append(String.format("%-6s | %-9s | ", "-", "-"));
-            for (int i = 0; i < numServs; i++) row.append(String.format("%-3s | ", "-"));
-            row.append(String.format("%-30s | %-12s", "-", "-"));
-            System.out.println(row.toString());
+            String[] empty = new String[cols];
+            for (int i = 0; i < cols; i++) empty[i] = "-";
+            System.out.println(row(w, empty, DIM + WHITE, bc));
         } else {
             for (TickStat stat : tickStats) {
-                StringBuilder row = new StringBuilder();
-                row.append(String.format("%-6d | %-9d | ", stat.getClock(), stat.getQueueLen()));
+                String[] vals = new String[cols];
+                vals[0] = String.valueOf(stat.getClock());
+                vals[1] = String.valueOf(stat.getQueueLen());
                 if (stat.getServerStatus() == null || stat.getServerStatus().isEmpty()) {
-                    for (int i = 0; i < numServs; i++) row.append(String.format("%-3s | ", "-"));
+                    for (int i = 0; i < numServs; i++) vals[2 + i] = "-";
                 } else {
+                    int idx = 0;
                     for (int sStatus : stat.getServerStatus()) {
-                        row.append(String.format("%-3d | ", sStatus));
+                        vals[2 + idx] = String.valueOf(sStatus);
+                        idx++;
                     }
                 }
                 String fel = (stat.getFelStr() == null || stat.getFelStr().isEmpty()) ? "-" : stat.getFelStr();
-                row.append(String.format("%-30s | %-12d", fel, stat.getNumDepartures()));
-                System.out.println(row.toString());
+                vals[2 + numServs] = fel;
+                vals[3 + numServs] = String.valueOf(stat.getNumDepartures());
+
+                // Color: clock=white, queue=yellow, servers=green/red, FEL=magenta, deps=white
+                String[] rColors = new String[cols];
+                rColors[0] = BRIGHT_WHITE;
+                rColors[1] = BRIGHT_YELLOW;
+                for (int i = 0; i < numServs; i++) {
+                    rColors[2 + i] = vals[2 + i].equals("1") ? BRIGHT_RED : BRIGHT_GREEN;
+                }
+                rColors[2 + numServs] = BRIGHT_MAGENTA;
+                rColors[3 + numServs] = BRIGHT_WHITE;
+
+                System.out.println(row(w, vals, rColors, bc));
             }
         }
-        System.out.println("---------------------------------------------------------------------------------------------------------\n");
+        System.out.println(bottomBorder(w, bc));
+        System.out.println();
     }
 
     public void printStatistics() {
-        System.out.println("---------------------------------------------------------------------------------------------------------");
-        System.out.println("                                SIMULATION RESULTS / STATISTICS                                          ");
-        System.out.println("---------------------------------------------------------------------------------------------------------");
-        System.out.printf("1. Average waiting time per customer            : %.4f minutes\n", avgWait);
-        System.out.printf("2. Probability (wait)                           : %.4f\n", probWait);
-        System.out.print ("3. Probability of idle server                   : ");
+        int[] w = {50, 35};
+        String bc = DIM + CYAN;
+
+        System.out.println(topBorder(w, bc));
+        printTitle("SIMULATION RESULTS / STATISTICS", totalWidth(w), BRIGHT_YELLOW);
+        System.out.println(midBorder(w, bc));
+        System.out.println(row(w, new String[]{"Metric", "Value"}, BOLD + BRIGHT_CYAN, bc));
+        System.out.println(midBorder(w, bc));
+
+        System.out.println(row(w,
+                new String[]{"1. Average waiting time per customer", String.format("%.4f min", avgWait)},
+                new String[]{WHITE, BRIGHT_GREEN}, bc));
+        System.out.println(row(w,
+                new String[]{"2. Probability (wait)", String.format("%.4f", probWait)},
+                new String[]{WHITE, BRIGHT_GREEN}, bc));
+
+        // Idle server probabilities
+        String idleStr;
         if (probIdleServer != null) {
+            StringBuilder sb = new StringBuilder();
             for (int i = 0; i < probIdleServer.length; i++) {
-                System.out.printf("[S%d: %.4f] ", i, probIdleServer[i]);
+                if (i > 0) sb.append("  ");
+                sb.append(String.format("S%d: %.4f", i + 1, probIdleServer[i]));
             }
-            System.out.println();
+            idleStr = sb.toString();
         } else {
-            System.out.println("[-]");
+            idleStr = "-";
         }
-        System.out.printf("4. Average service time                         : %.4f minutes\n", avgServiceActual);
-        System.out.printf("5. Average time between arrivals                : %.4f minutes\n", avgInterArrActual);
-        System.out.printf("6. Average waiting time of those who wait       : %.4f minutes\n", avgWaitThoseWhoWait);
-        System.out.printf("7. Average time customer spends in the system   : %.4f minutes\n", avgSystemTime);
-        System.out.println("---------------------------------------------------------------------------------------------------------\n");
+        System.out.println(row(w,
+                new String[]{"3. Probability of idle server", idleStr},
+                new String[]{WHITE, BRIGHT_MAGENTA}, bc));
+        System.out.println(row(w,
+                new String[]{"4. Average service time", String.format("%.4f min", avgServiceActual)},
+                new String[]{WHITE, BRIGHT_GREEN}, bc));
+        System.out.println(row(w,
+                new String[]{"5. Average time between arrivals", String.format("%.4f min", avgInterArrActual)},
+                new String[]{WHITE, BRIGHT_GREEN}, bc));
+        System.out.println(row(w,
+                new String[]{"6. Avg waiting time of those who wait", String.format("%.4f min", avgWaitThoseWhoWait)},
+                new String[]{WHITE, BRIGHT_GREEN}, bc));
+        System.out.println(row(w,
+                new String[]{"7. Avg time customer spends in system", String.format("%.4f min", avgSystemTime)},
+                new String[]{WHITE, BRIGHT_GREEN}, bc));
+
+        System.out.println(bottomBorder(w, bc));
+        System.out.println();
     }
 
     public void printCustomerTable() {
         int numServs = (cfg != null) ? cfg.getNumServers() : 3;
 
-        System.out.println("---------------------------------------------------------------------------------------------------------------------");
-        System.out.println("                                           CUSTOMER TABLE                                                            ");
-        System.out.println("---------------------------------------------------------------------------------------------------------------------");
+        // Columns: Customer(8), Interarrival(12), Arrival(8), WhenS1..Sn(8 each), Server(8), Service(8), Begins(8), S1Comp..SnComp(8 each), Delay(7), System(7)
+        int cols = 6 + numServs * 2 + 2;
+        int[] w = new int[cols];
+        String[] h1 = new String[cols]; // header row 1
+        String[] h2 = new String[cols]; // header row 2
 
-        // Header row 1
-        StringBuilder header1 = new StringBuilder();
-        header1.append(String.format("%-10s | %-12s | ", "Customer", "Interarrival"));
-        header1.append(String.format("%-12s | ", "Arrival"));
+        int ci = 0;
+        w[ci]=10; h1[ci]="Customer";  h2[ci]="Number";     ci++;
+        w[ci]=14; h1[ci]="Interarrival"; h2[ci]="Time(Min)"; ci++;
+        w[ci]=10; h1[ci]="Arrival";   h2[ci]="Time";       ci++;
         for (int i = 0; i < numServs; i++) {
-            header1.append(String.format("%-14s | ", "When S" + (i + 1)));
+            w[ci]=12; h1[ci]="When S"+(i+1); h2[ci]="Available"; ci++;
         }
-        header1.append(String.format("%-13s | %-12s | %-12s | ", "Server", "Service", "Time"));
+        w[ci]=10; h1[ci]="Server";    h2[ci]="Chosen";     ci++;
+        w[ci]=10; h1[ci]="Service";   h2[ci]="Time(Min)";  ci++;
+        w[ci]=10; h1[ci]="Time";      h2[ci]="Begins";     ci++;
         for (int i = 0; i < numServs; i++) {
-            header1.append(String.format("%-10s | ", "S" + (i + 1) + " Comp"));
+            w[ci]=10; h1[ci]="S"+(i+1)+" Comp"; h2[ci]="Time"; ci++;
         }
-        header1.append(String.format("%-7s | %-11s", "Customer", "Time in"));
-        System.out.println(header1.toString());
+        w[ci]=10; h1[ci]="Customer";  h2[ci]="Delay";      ci++;
+        w[ci]=10; h1[ci]="Time in";   h2[ci]="System";     ci++;
 
-        // Header row 2
-        StringBuilder header2 = new StringBuilder();
-        header2.append(String.format("%-10s | %-12s | ", "Number", "Time (Min)"));
-        header2.append(String.format("%-12s | ", "Time"));
-        for (int i = 0; i < numServs; i++) {
-            header2.append(String.format("%-14s | ", "Available"));
-        }
-        header2.append(String.format("%-13s | %-12s | %-12s | ", "Chosen", "Time (Min)", "Begins"));
-        for (int i = 0; i < numServs; i++) {
-            header2.append(String.format("%-10s | ", "Time"));
-        }
-        header2.append(String.format("%-7s | %-11s", "Delay", "System"));
-        System.out.println(header2.toString());
+        String bc = DIM + CYAN;
 
-        System.out.println("---------------------------------------------------------------------------------------------------------------------");
+        System.out.println(topBorder(w, bc));
+        printTitle("CUSTOMER TABLE", totalWidth(w), BRIGHT_YELLOW);
+        System.out.println(midBorder(w, bc));
+        System.out.println(row(w, h1, BOLD + BRIGHT_CYAN, bc));
+        System.out.println(row(w, h2, BOLD + CYAN, bc));
+        System.out.println(midBorder(w, bc));
 
         if (customers == null || customers.isEmpty()) {
-            System.out.println("-");
+            String[] empty = new String[cols];
+            for (int i = 0; i < cols; i++) empty[i] = "-";
+            System.out.println(row(w, empty, DIM + WHITE, bc));
         } else {
             int[] serverAvail = new int[numServs];
 
             for (CustomerRecord c : customers) {
-                StringBuilder row = new StringBuilder();
-                row.append(String.format("%-10d | %-12s | ", c.getId(), String.valueOf(c.getInterArrival())));
+                String[] vals = new String[cols];
+                String[] colors = new String[cols];
+                int vi = 0;
 
-                String arrival = c.getArrivalTime() < 0 ? "-" : String.valueOf(c.getArrivalTime());
-                row.append(String.format("%-12s | ", arrival));
+                vals[vi] = String.valueOf(c.getId());            colors[vi] = BRIGHT_WHITE;  vi++;
+                vals[vi] = String.valueOf(c.getInterArrival());  colors[vi] = BRIGHT_MAGENTA; vi++;
+                vals[vi] = c.getArrivalTime() < 0 ? "-" : String.valueOf(c.getArrivalTime());
+                colors[vi] = BRIGHT_GREEN; vi++;
 
                 for (int i = 0; i < numServs; i++) {
-                    row.append(String.format("%-14s | ", String.valueOf(serverAvail[i])));
+                    vals[vi] = String.valueOf(serverAvail[i]); colors[vi] = BRIGHT_YELLOW; vi++;
                 }
 
                 String server = c.getServerId() < 0 ? "-" : "S" + (c.getServerId() + 1);
-                row.append(String.format("%-13s | ", server));
+                vals[vi] = server; colors[vi] = BRIGHT_CYAN; vi++;
 
-                String serviceTime = c.getServiceTime() <= 0 ? "-" : String.valueOf(c.getServiceTime());
-                row.append(String.format("%-12s | ", serviceTime));
+                vals[vi] = c.getServiceTime() <= 0 ? "-" : String.valueOf(c.getServiceTime());
+                colors[vi] = BRIGHT_MAGENTA; vi++;
 
-                String serviceStart = c.getServiceStartTime() < 0 ? "-" : String.valueOf(c.getServiceStartTime());
-
-                row.append(String.format("%-12s | ", serviceStart));
+                vals[vi] = c.getServiceStartTime() < 0 ? "-" : String.valueOf(c.getServiceStartTime());
+                colors[vi] = BRIGHT_GREEN; vi++;
 
                 for (int i = 0; i < numServs; i++) {
                     if (c.getServerId() == i) {
-                        row.append(String.format("%-10s | ", c.getServiceEndTime() < 0 ? "-" : String.valueOf(c.getServiceEndTime())));
+                        vals[vi] = c.getServiceEndTime() < 0 ? "-" : String.valueOf(c.getServiceEndTime());
                     } else {
-                        row.append(String.format("%-10s | ", ""));
+                        vals[vi] = "";
                     }
+                    colors[vi] = BRIGHT_RED; vi++;
                 }
 
                 String wait = c.getArrivalTime() < 0 ? "-" : String.valueOf(c.getWaitTime());
                 int sysTime = c.getWaitTime() + c.getServiceTime();
                 String systemTime = c.getArrivalTime() < 0 ? "-" : String.valueOf(sysTime);
 
-                row.append(String.format("%-7s | %-11s", wait, systemTime));
+                vals[vi] = wait;       colors[vi] = BRIGHT_YELLOW; vi++;
+                vals[vi] = systemTime; colors[vi] = BRIGHT_WHITE;  vi++;
 
-                System.out.println(row.toString());
+                System.out.println(row(w, vals, colors, bc));
 
                 if (c.getServerId() >= 0 && c.getServerId() < numServs) {
                     serverAvail[c.getServerId()] = c.getServiceEndTime();
                 }
             }
         }
-        System.out.println("---------------------------------------------------------------------------------------------------------------------\n");
+        System.out.println(bottomBorder(w, bc));
+        System.out.println();
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //                         HELPERS
+    // ═══════════════════════════════════════════════════════════════
+
+    private static String repeat(String s, int n) {
+        if (n <= 0) return "";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < n; i++) sb.append(s);
+        return sb.toString();
+    }
+
+    private static String stripAnsi(String s) {
+        return s.replaceAll("\033\\[[0-9;]*m", "");
     }
 
     // Core private methods
