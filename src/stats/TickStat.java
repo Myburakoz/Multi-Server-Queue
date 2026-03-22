@@ -1,5 +1,6 @@
 package stats;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class TickStat {
@@ -8,6 +9,23 @@ public class TickStat {
     private List<Integer> serverStatus;
     private String felStr;
     private int numDepartures;
+    private List<String> eventLog;
+
+    public TickStat() {
+        this.eventLog = new ArrayList<>();
+    }
+
+    public void addLog(String message) {
+        eventLog.add(message);
+    }
+
+    public List<String> getEventLog() {
+        return eventLog;
+    }
+
+    public void setEventLog(List<String> eventLog) {
+        this.eventLog = eventLog;
+    }
 
     public int getClock() {
         return clock;

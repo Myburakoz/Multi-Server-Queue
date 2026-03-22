@@ -1,9 +1,5 @@
 package util;
 
-/**
- * ASCII box-drawing table printer with ANSI color support.
- * Uses ─ │ ┌ ┐ └ ┘ ┬ ┴ ├ ┤ ┼ characters for clean MySQL-style tables.
- */
 public class TablePrinter {
 
     // ANSI color codes
@@ -42,16 +38,6 @@ public class TablePrinter {
     private static final char RJ = '┤'; // right junction
     private static final char CJ = '┼'; // cross junction
 
-    // ─── Building methods ───
-
-    /**
-     * Builds a horizontal border line.
-     * @param widths   column widths (content width, padding is added automatically)
-     * @param left     left corner/junction char
-     * @param mid      middle junction char
-     * @param right    right corner/junction char
-     * @param color    ANSI color for the border
-     */
     public static String border(int[] widths, char left, char mid, char right, String color) {
         StringBuilder sb = new StringBuilder();
         sb.append(color);
@@ -78,13 +64,6 @@ public class TablePrinter {
         return border(widths, BL, BJ, BR, color);
     }
 
-    /**
-     * Builds a data row with colored borders and content.
-     * @param widths       column widths
-     * @param values       cell values (plain text, will be left-aligned)
-     * @param cellColors   per-cell color (use "" or RESET for default)
-     * @param borderColor  color for the │ separators
-     */
     public static String row(int[] widths, String[] values, String[] cellColors, String borderColor) {
         StringBuilder sb = new StringBuilder();
         sb.append(borderColor).append(V).append(RESET);
@@ -101,18 +80,12 @@ public class TablePrinter {
         return sb.toString();
     }
 
-    /**
-     * Builds a row with uniform color for all cells.
-     */
     public static String row(int[] widths, String[] values, String cellColor, String borderColor) {
         String[] colors = new String[values.length];
         for (int i = 0; i < colors.length; i++) colors[i] = cellColor;
         return row(widths, values, colors, borderColor);
     }
 
-    /**
-     * Prints a centered title banner.
-     */
     public static void printTitle(String title, int totalWidth, String color) {
         int pad = (totalWidth - title.length()) / 2;
         if (pad < 0) pad = 0;
@@ -122,10 +95,6 @@ public class TablePrinter {
         System.out.println(sb.toString());
     }
 
-    /**
-     * Computes total display width of the table given column widths.
-     * Each column contributes: 1 (│) + 1 (pad) + width + 1 (pad) ... + final │
-     */
     public static int totalWidth(int[] widths) {
         int w = 1; // leading │
         for (int cw : widths) {

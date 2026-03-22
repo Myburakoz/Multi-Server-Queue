@@ -143,8 +143,10 @@ public class Main {
                     {"3", "Customer Arrival Table"},
                     {"4", "Simulation Table"},
                     {"5", "Customer Table"},
-                    {"6", "Statistics"},
-                    {"7", "Print All Tables"},
+                    {"6", "Customer Service Table (per server)"},
+                    {"7", "Statistics"},
+                    {"8", "Detailed Tick Log"},
+                    {"9", "Print All Tables"},
                     {"0", "Exit"}
             };
 
@@ -188,15 +190,23 @@ public class Main {
                     sim.printCustomerTable();
                     break;
                 case "6":
-                    sim.printStatistics();
+                    sim.printCustomerServiceTable();
                     break;
                 case "7":
+                    sim.printStatistics();
+                    break;
+                case "8":
+                    sim.printDetailedLog();
+                    break;
+                case "9":
                     sim.printInterArrivalTable();
                     sim.printServiceTable();
                     sim.printArrivalTable();
                     sim.printSimulationTable();
                     sim.printCustomerTable();
+                    sim.printCustomerServiceTable();
                     sim.printStatistics();
+                    sim.printDetailedLog();
                     break;
                 default:
                     System.out.println(BRIGHT_RED + "  ✗ Invalid option. Please try again." + RESET);
@@ -252,7 +262,9 @@ public class Main {
             sim.printArrivalTable();
             sim.printSimulationTable();
             sim.printCustomerTable();
+            sim.printCustomerServiceTable();
             sim.printStatistics();
+            sim.printDetailedLog();
 
             System.setOut(originalOut);
             fileOut.close();

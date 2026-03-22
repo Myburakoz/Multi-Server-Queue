@@ -9,6 +9,15 @@ public class CustomerRecord {
     private int serverId;
     private int waitTime;
     private int serviceTime;
+    private int[] preGeneratedServiceTimes;
+
+    public int[] getPreGeneratedServiceTimes() {
+        return preGeneratedServiceTimes;
+    }
+
+    public void setPreGeneratedServiceTimes(int[] preGeneratedServiceTimes) {
+        this.preGeneratedServiceTimes = preGeneratedServiceTimes;
+    }
 
     public int getId() {
         return id;
