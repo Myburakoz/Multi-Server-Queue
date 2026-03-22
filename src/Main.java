@@ -214,12 +214,68 @@ public class Main {
         }
     }
 
+    // ─── Logging ───
+    public static void saveResultsToLog(Simulation sim) {
+        try {
+            java.io.File logDir = new java.io.File("logs");
+            if (!logDir.exists()) {
+                logDir.mkdirs();
+            }
+            String timestamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date());
+            String filename = "logs/simulation_" + timestamp + ".log";
+
+            java.io.PrintStream originalOut = System.out;
+
+            java.io.PrintStream fileOut = new java.io.PrintStream(new java.io.FileOutputStream(filename)) {
+                @Override
+                public void print(String s) {
+                    super.print(s == null ? null : s.replaceAll("\033\\[[0-9;]*m", ""));
+                }
+                @Override
+                public void println(String s) {
+                    super.println(s == null ? null : s.replaceAll("\033\\[[0-9;]*m", ""));
+                }
+                @Override
+                public void print(Object obj) {
+                    super.print(obj == null ? null : obj.toString().replaceAll("\033\\[[0-9;]*m", ""));
+                }
+                @Override
+                public void println(Object obj) {
+                    super.println(obj == null ? null : obj.toString().replaceAll("\033\\[[0-9;]*m", ""));
+                }
+            };
+
+            System.setOut(fileOut);
+
+            sim.printInterArrivalTable();
+            sim.printServiceTable();
+            sim.printArrivalTable();
+            sim.printSimulationTable();
+            sim.printCustomerTable();
+            sim.printStatistics();
+
+            System.setOut(originalOut);
+            fileOut.close();
+
+            System.out.println(BRIGHT_GREEN + "  ✔ Results successfully saved to " + filename + RESET);
+            System.out.println();
+        } catch (Exception e) {
+            System.out.println(BRIGHT_RED + "  ✗ Failed to save results to log file: " + e.getMessage() + RESET);
+            System.out.println();
+        }
+    }
+
     // ─── Main ───
     public static void main(String[] args) {
         SimConfig cfg = interactiveSetup();
 
         Simulation sim = new Simulation(cfg);
         sim.run();
+
+        saveResultsToLog(sim);
+        
+        System.out.print(DIM + "  Press " + BRIGHT_CYAN + "Enter" + DIM + " to open results menu..." + RESET);
+        scanner.nextLine();
 
         clearConsole();
         interactiveMenu(sim);
