@@ -13,6 +13,7 @@ A discrete-event simulation of a **multi-server queueing system** (M/M/c model) 
 - **Interactive CLI setup** with styled ANSI prompts
 - **Post-simulation menu** to view individual result tables
 - **Colored ASCII box-drawing tables** for all output (MySQL-style)
+- **Automatic Logging**: Saves all simulation results and text tables to a plain `.log` file
 
 ---
 
@@ -41,7 +42,19 @@ src/
 
 ## 🚀 How to Run
 
-### Compile
+### Compile with Maven (Recommended)
+
+```bash
+mvn clean package
+```
+
+### Run with Maven
+
+```bash
+mvn exec:java
+```
+
+### Alternative: Compile without Maven (Raw Java)
 
 ```bash
 cd src
@@ -52,16 +65,16 @@ javac -d ../out/production/MultiServerQueue \
   stats/TickStat.java Simulation.java Main.java
 ```
 
-### Run
+### Alternative: Run without Maven (Raw Java)
 
 ```bash
 cd ../out/production/MultiServerQueue
 java Main
 ```
 
-### Or with IntelliJ IDEA
+### Or with IDE (IntelliJ / Eclipse)
 
-Open the project, mark `src/` as Sources Root, and run `Main.java`.
+Open the project as a Maven project and run `Main.java`.
 
 ---
 
@@ -83,18 +96,22 @@ The program will prompt you for:
 
 After simulation completes, an interactive menu appears:
 
-| Key | Table                              |
-|-----|------------------------------------|
-| `1` | Inter-Arrival Time Distribution    |
-| `2` | Service Time Distribution          |
-| `3` | Customer Arrival Table             |
-| `4` | Simulation Table (FEL snapshots)   |
-| `5` | Customer Table (detailed tracking) |
-| `6` | Statistics Summary                 |
-| `7` | Print All Tables                   |
-| `0` | Exit                               |
+| Key | Table                                 |
+|-----|---------------------------------------|
+| `1` | Inter-Arrival Time Distribution       |
+| `2` | Service Time Distribution             |
+| `3` | Customer Arrival Table                |
+| `4` | Simulation Table                      |
+| `5` | Customer Table                        |
+| `6` | Customer Service Table (per server)   |
+| `7` | Statistics                            |
+| `8` | Detailed Tick Log                     |
+| `9` | Print All Tables                      |
+| `0` | Exit                                  |
 
 Press **Enter** after viewing a table to return to the menu.
+
+> 📝 **Note:** Upon completion of the simulation, all tables and statistics are automatically saved as a text file in the `logs/` directory (e.g., `logs/simulation_YYYYMMDD_HHMMSS.log`). The log file retains all the table formatting seamlessly, but safely strips out ANSI color codes for easy reading in standard text editors.
 
 ---
 
